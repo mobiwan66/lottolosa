@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lottolosa v3.8 – Gray–Orange</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#1d1f20" />
+  <style>
+    :root{--bg1:#1e1f20;--bg2:#2a2d2f;--card:#2f3336;--card2:#36393d;--text:#f3f3f3;--muted:#b7b9bc;--accent:#f59e0b;--accent2:#ffb84d;--danger:#ef4444;--ball:#e8e8e8;--ballEdge:#f59e0b;--ballText:#1f2326;--shadow:0 8px 28px rgba(0,0,0,.35);--footer:#2b2e31}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--text);font-family:Inter,Roboto,system-ui,Segoe UI,Arial;min-height:100vh;display:flex;flex-direction:column}
+    .wrap{max-width:1024px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:14px;flex:1}
+    .top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(180deg,#34383b,#2f3336);border:1px solid rgba(255,255,255,.05);border-radius:14px;box-shadow:var(--shadow);padding:12px 16px;font-weight:900;font-size:18px}
+    .appname{font-size:16px;font-weight:800;color:var(--accent2)}
+    .top-right{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--muted)}
+    .icon{width:20px;height:20px;vertical-align:middle}
+    .win{color:var(--accent2)} .loss{color:var(--danger)} .gold{color:var(--accent2)}
+    @keyframes flashWin{0%{filter:brightness(1)}35%{filter:brightness(1.8)}100%{filter:brightness(1)}}
+    @keyframes blinkLoss{0%,100%{opacity:1}40%{opacity:.3}70%{opacity:1}}
+    .anim-flash{animation:flashWin .8s ease-in-out} .anim-blink{animation:blinkLoss .9s ease-in-out}
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .sum{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px}
+    .sum .h{font-size:11px;color:var(--muted);margin-bottom:4px} .sum .v{font-weight:900}
+    .row{display:grid;grid-template-columns:2fr 1fr;gap:14px;align-items:stretch}
+    .card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid rgba(255,255,255,.06);border-radius:12px;box-shadow:var(--shadow);padding:12px 14px}
+    .title{font-weight:800;margin-bottom:10px}
+    .balls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .ball{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 30%, #fff, var(--ball));color:var(--ballText);font-weight:700;border:2px solid var(--ballEdge);font-size:14px}
+    .zzball{background:radial-gradient(circle at 30% 30%, #ddd, #b0b0b0);border:2px solid var(--accent)}
+    .years .presets{display:flex;gap:8px;flex-wrap:wrap}
+    .preset-btn{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.10);background:#3a3d40;color:var(--text);font-weight:900;cursor:pointer}
+    .preset-btn.active{outline:2px solid var(--accent2);background:#46494c}
+    .stats{display:grid;grid-template-columns:repeat(8,1fr);gap:10px}
+    .stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px}
+    .h{font-size:11px;color:var(--muted);margin-bottom:4px}
+    .v{font-weight:900}
+    .footer{background:var(--footer);padding:14px 16px;box-shadow:0 -8px 24px rgba(0,0,0,.25)}
+    .footer .inner{max-width:1024px;margin:0 auto;display:flex;justify-content:center;gap:12px}
+    .btn{border:1px solid rgba(255,255,255,.12);background:#f59e0b;color:#1b1b1b;padding:12px 18px;border-radius:10px;font-weight:900;cursor:pointer}
+    .btn:hover{filter:brightness(1.05)} .btn:active{transform:translateY(1px)}
+    .ghost{background:#3a3d40;color:#f3f3f3}
+    #installApp{display:none;padding:6px 10px;font-size:13px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:#3a3d40;color:#f3f3f3;cursor:pointer}
+    #installApp:hover{background:#4a4d50}
+    @media (max-width:860px){.row{grid-template-columns:1fr}.footer .inner{justify-content:space-between}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top-bar" id="balanceBar">
+      <span class="appname">Lottolosa v3.8</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <svg id="balanceIcon" class="icon" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+        <span id="balanceText">0 €</span>
+      </div>
+      <div class="top-right">
+        <span id="tempDisplay">🌡 +0.000°C</span>
+        <span id="gptYears">🤖 +0 Jahre n. GPT</span>
+        <button id="installApp">Installieren</button>
+      </div>
+    </div>
+
+    <section class="summary">
+      <div class="sum"><div class="h">Tippanzahl</div><div class="v" id="sum_tips">12</div></div>
+      <div class="sum"><div class="h">Ziehungen</div><div class="v" id="sum_draws">–</div></div>
+      <div class="sum"><div class="h">Gesamtgewinn</div><div class="v" id="sum_win">– €</div></div>
+      <div class="sum"><div class="h">Gesamtkosten</div><div class="v" id="sum_cost">– €</div></div>
+    </section>
+
+    <section class="row">
+      <div class="card">
+        <div class="title">Häufigste Zahlen (Top 6, inkl. ZZ)</div>
+        <div class="balls" id="topBalls"></div>
+      </div>
+      <div class="card years">
+        <div class="title">Ziehungen (52 pro Jahr)</div>
+        <div class="presets">
+          <button class="preset-btn" data-v="52">1 Jahr</button>
+          <button class="preset-btn active" data-v="520">10 Jahre</button>
+          <button class="preset-btn" data-v="1040">20 Jahre</button>
+          <button class="preset-btn" data-v="2600">50 Jahre</button>
+          <button class="preset-btn" id="until6">Solange bis 6 Richtige</button>
+        </div>
+        <div id="stamp" class="h" style="margin-top:8px">&nbsp;</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="stats">
+        <div class="stat"><div class="h">3 Richtige</div><div class="v" id="s3">–</div></div>
+        <div class="stat"><div class="h">3+ZZ</div><div class="v" id="s3zz">–</div></div>
+        <div class="stat"><div class="h">4 Richtige</div><div class="v" id="s4">–</div></div>
+        <div class="stat"><div class="h">4+ZZ</div><div class="v" id="s4zz">–</div></div>
+        <div class="stat"><div class="h">5 Richtige</div><div class="v" id="s5">–</div></div>
+        <div class="stat"><div class="h">5+ZZ</div><div class="v" id="s5zz">–</div></div>
+        <div class="stat"><div class="h">6 Richtige</div><div class="v" id="s6">–</div></div>
+        <div class="stat"><div class="h">6 Richtige + ZZ</div><div class="v" id="s6zz">–</div></div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="inner">
+      <button id="btnQuick" class="btn ghost">Quicktipp</button>
+      <button id="btnStart" class="btn">Start</button>
+    </div>
+  </footer>
+
+<script>
+const payout={'6':2000000,'6+':3000000,'5':12500,'5+':125000,'4':125,'4+':1250,'3':10,'3+':25};
+function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function generateMain6(){const s=new Set();while(s.size<6)s.add(randInt(1,49));return Array.from(s).sort((a,b)=>a-b);}
+function generateDraw(){const main=generateMain6();let zz;do{zz=randInt(1,49)}while(main.includes(zz));return {main,zz};}
+let tips=[]; function generate12Tips(){tips=Array.from({length:12},()=>generateMain6());} generate12Tips();
+let selectedDraws=520;
+const els={bar:document.getElementById('balanceBar'),icon:document.getElementById('balanceIcon'),bal:document.getElementById('balanceText'),
+sum_tips:document.getElementById('sum_tips'),sum_draws:document.getElementById('sum_draws'),sum_win:document.getElementById('sum_win'),sum_cost:document.getElementById('sum_cost'),
+s3:document.getElementById('s3'),s3zz:document.getElementById('s3zz'),s4:document.getElementById('s4'),s4zz:document.getElementById('s4zz'),s5:document.getElementById('s5'),s5zz:document.getElementById('s5zz'),s6:document.getElementById('s6'),s6zz:document.getElementById('s6zz'),
+topBalls:document.getElementById('topBalls'),stamp:document.getElementById('stamp'),btnQuick:document.getElementById('btnQuick'),btnStart:document.getElementById('btnStart'),until6:document.getElementById('until6'),presetBtns:Array.from(document.querySelectorAll('.preset-btn'))};
+els.sum_tips.textContent=12;
+function activatePreset(value){els.presetBtns.forEach(b=>b.classList.toggle('active', b.dataset.v===String(value)));selectedDraws=parseInt(value,10);}
+els.presetBtns.forEach(btn=>{if(btn.dataset.v)btn.addEventListener('click',()=>activatePreset(btn.dataset.v));}); activatePreset(520);
+els.btnQuick.addEventListener('click',()=>{generate12Tips();els.stamp.textContent=`12 neue Tipps – ${new Date().toLocaleTimeString()}`;});
+
+function renderTop(freq,zzfreq){
+  const arr=Array.from({length:49},(_,i)=>i+1).map(n=>({n,c:freq[n]})).sort((a,b)=>b.c-a.c||a.n-b.n).slice(0,6);
+  const maxZZ=Math.max(...zzfreq.slice(1));
+  const topzz=zzfreq.indexOf(maxZZ);
+  els.topBalls.innerHTML='';
+  arr.forEach(({n})=>{const b=document.createElement('span');b.className='ball';b.textContent=n;els.topBalls.appendChild(b);});
+  const zz=document.createElement('span');zz.className='ball zzball';zz.textContent='+'+topzz;els.topBalls.appendChild(zz);
+}
+
+function updateTemp(draws){const warming=(draws/100000).toFixed(3);document.getElementById('tempDisplay').textContent=`🌡 +${warming}°C`;}
+function updateGPTYears(){const founding=2022;const yr=new Date().getFullYear();document.getElementById('gptYears').textContent=`🤖 +${yr-founding} Jahre n. GPT`;} updateGPTYears();
+
+function updateUI(stats,draws,freq,zzfreq){
+  const {c3,c3z,c4,c4z,c5,c5z,c6,c6z,totalWin}=stats;
+  els.s3.textContent=c3;els.s3zz.textContent=c3z;els.s4.textContent=c4;els.s4zz.textContent=c4z;els.s5.textContent=c5;els.s5zz.textContent=c5z;els.s6.textContent=c6;els.s6zz.textContent=c6z;
+  els.sum_draws.textContent=String(draws);
+  els.sum_win.textContent=totalWin.toLocaleString('de-DE')+' €';
+  const cost=draws*12; els.sum_cost.textContent=cost.toLocaleString('de-DE')+' €';
+  const balance=totalWin-cost; els.bal.textContent=balance.toLocaleString('de-DE')+' €';
+  els.bar.classList.remove('anim-flash','anim-blink');
+  if(balance>=0){ els.bal.className='win'; document.getElementById('balanceIcon').setAttribute('fill','#ffb84d'); els.bar.classList.add('anim-flash'); }
+  else { els.bal.className='loss'; document.getElementById('balanceIcon').setAttribute('fill','#ef4444'); els.bar.classList.add('anim-blink'); }
+  renderTop(freq,zzfreq); updateTemp(draws); updateGPTYears();
+}
+
+function simulate(draws){
+  let c3=0,c3z=0,c4=0,c4z=0,c5=0,c5z=0,c6=0,c6z=0,totalWin=0;
+  const freq=new Uint32Array(50), zzfreq=new Uint32Array(50);
+  for(let i=0;i<draws;i++){
+    const {main,zz}=generateDraw();
+    for(let n of main)freq[n]++; zzfreq[zz]++;
+    for(let t of tips){
+      let hits=0; for(let n of t){ if(main.includes(n)) hits++; }
+      const hasZZ=t.includes(zz);
+      if(hits===6){ if(hasZZ){ c6z++; totalWin+=payout['6+']; } else { c6++; totalWin+=payout['6']; } }
+      else if(hits===5){ if(hasZZ){ c5z++; totalWin+=payout['5+']; } else { c5++; totalWin+=payout['5']; } }
+      else if(hits===4){ if(hasZZ){ c4z++; totalWin+=payout['4+']; } else { c4++; totalWin+=payout['4']; } }
+      else if(hits===3){ if(hasZZ){ c3z++; totalWin+=payout['3+']; } else { c3++; totalWin+=payout['3']; } }
+    }
+  }
+  return {stats:{c3,c3z,c4,c4z,c5,c5z,c6,c6z,totalWin}, freq, zzfreq};
+}
+
+function runSimulation(draws){
+  const {stats,freq,zzfreq} = simulate(draws);
+  updateUI(stats,draws,freq,zzfreq);
+}
+
+async function runUntil6(){
+  els.until6.disabled=true; els.until6.textContent='Läuft...';
+  let draws=0;
+  let c3=0,c3z=0,c4=0,c4z=0,c5=0,c5z=0,c6=0,c6z=0,totalWin=0;
+  const freq=new Uint32Array(50), zzfreq=new Uint32Array(50);
+  let found=false;
+  while(!found && draws<1000000){
+    draws++;
+    const {main,zz}=generateDraw();
+    for(let n of main)freq[n]++; zzfreq[zz]++;
+    for(let t of tips){
+      let hits=0; for(let n of t){ if(main.includes(n)) hits++; }
+      const hasZZ=t.includes(zz);
+      if(hits===6){ if(hasZZ){ c6z++; totalWin+=payout['6+']; } else { c6++; totalWin+=payout['6']; } found=true; break; }
+      else if(hits===5){ if(hasZZ){ c5z++; totalWin+=payout['5+']; } else { c5++; totalWin+=payout['5']; } }
+      else if(hits===4){ if(hasZZ){ c4z++; totalWin+=payout['4+']; } else { c4++; totalWin+=payout['4']; } }
+      else if(hits===3){ if(hasZZ){ c3z++; totalWin+=payout['3+']; } else { c3++; totalWin+=payout['3']; } }
+    }
+    if(draws%200===0) await new Promise(r=>setTimeout(r,0));
+  }
+  updateUI({c3,c3z,c4,c4z,c5,c5z,c6,c6z,totalWin}, draws, freq, zzfreq);
+  els.until6.disabled=false; els.until6.textContent='Solange bis 6 Richtige';
+}
+
+els.btnStart.addEventListener('click',()=>runSimulation(selectedDraws));
+els.until6.addEventListener('click',runUntil6);
+els.btnQuick.addEventListener('click',()=>{ generate12Tips(); els.stamp.textContent=`12 neue Tipps – ${new Date().toLocaleTimeString()}`; });
+
+// PWA install button
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault(); deferredPrompt = e;
+  const btn = document.getElementById('installApp');
+  if(btn) btn.style.display='inline-block';
+});
+document.getElementById('installApp').addEventListener('click', async ()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+  if(choice?.outcome==='accepted'){
+    document.getElementById('installApp').textContent = 'Installiert!';
+  }
+  deferredPrompt = null;
+});
+
+// SW register
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('./service-worker.js'); }); }
+</script>
+</body>
+</html>
